@@ -2,13 +2,14 @@ class Song
 
   attr_accessor :name, :album, :id
 
-  def initialize(name:, album:, id: nil)
+  def initialize(name:, album:, id: nil)#metaprogramming=>code that makes other code
+    #instance variables saved to the arguments
     @id = id
     @name = name
     @album = album
   end
 
-  def self.drop_table
+  def self.drop_table#class method =>classes handle tables
     sql = <<-SQL
       DROP TABLE IF EXISTS songs
     SQL
@@ -49,4 +50,32 @@ class Song
     song.save
   end
 
+  def self.new_from_db(row)
+    # self.new is equivalent to Song.new
+    self.new(id: row[0], name: row[1], album: row[2])
+  end
+
+  def self.all
+    sql = <<-SQL
+      SELECT *
+      FROM songs
+    SQL
+
+    DB[:conn].execute(sql).map do |row|
+      self.new_from_db(row)
+    end
+  end
+  
+  def self.find_by_name(name)
+    sql = <<-SQL
+      SELECT *
+      FROM songs
+      WHERE name = ?
+      LIMIT 1
+    SQL
+
+    DB[:conn].execute(sql, name).map do |row|
+      self.new_from_db(row)
+    end.first
+  end
 end
